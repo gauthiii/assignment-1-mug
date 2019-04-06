@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+  <style>
+  .abc{
+  color: white;
+  align= top left;
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    background: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  canvas {
+    border: 1px solid white;
+  }
+</style>
+</head>
+<body>
+
+<canvas width="960" height="592" id="game"></canvas>
+<p class="abc" id = "score">Score:<br> </p>
+<p class="abc" id = "#Players">#Players:</p>
+<script>
+var canvas = document.getElementById('game');
+var context = canvas.getContext('2d');
+var grid = 16;
+var count = 0;
+var TotalPlayers = 0;
+var score=0;
+var running = false;
+var joined=false;
+var listenerAdded = false;
+var mySnakeNo=-1;
+
+var url;
+var inputJson;
+
+var snakes = [];
+
+//var rgbcolor = [`gray`,`white`,`maroon`,`red`,`purple`,`fuchsia`,`green`,`lime`,`olive`,`yellow`,`navy`,`blue`,`teal`,`aqua`,`orange`,blueviolet`,`brown`,`burlywood`,`cadetblue`,`chartreuse`,`chocolate`,`coral`,`cornflowerblue`,`cornsilk`,`crimson`,`gold`,`goldenrod`,`greenyellow`,`grey`,`honeydew`,`hotpink`,`indianred`,`indigo`];
+				
+var rgbcode  = [`#808080`,`#ffffff`,`#800000`,`#ff0000`,`#800080`,`#ff00ff`,`#008000`,`#00ff00`,`#808000`,`#ffff00`,`#000080`,`#0000ff`,`#008080`,
+                `#00ffff`,`#ffa500`,`#8a2be2`,`#a52a2a`,`#deb887`,`#5f9ea0`,`#7fff00`,`#d2691e`,`#ff7f50`,`#6495ed`,`#fff8dc`,`#dc143c`,`#ffd700`,
+				`#daa520`,`#adff2f`,`#808080`,`#f0fff0`,`#ff69b4`,`#cd5c5c`,`#4b0082`];
+
+ 
+var user =  {name: ""};
+
+  
+var SNAKE = {
+  x: 160,
+  y: 160,
+  
+  // snakes[mySnakeNo] velocity. moves one grid length every frame in either the x or y direction
+  dx: grid,
+  dy: 0,
+  
+  // keep track of all grids the snakes[mySnakeNo] body occupies
+  cells: [],
+  
+  // length of the snakes[mySnakeNo]. grows when eating an apple
+  maxCells: 4,
+  
+  reset: false
+};
+
+var apple = {
+  x: 320,
+  y: 320
+};
+
+var range = {
+min:0,
+max:25
+};
+
+<!-- // get random whole numbers in a specific range
+// see https://stackoverflow.com/a/1527820/2124254 -->
+
+function sleep (time) 
+{
+  return new Promise((resolve) => setTimeout(resolve, time));
+}
+
+function UserAction(func) 
+{
+
+	var xhttp;
+    xhttp = new XMLHttpRequest();
+	xhttp.onreadystatechange = function() 
+								{
+									if (this.readyState == 4 && this.status == 200) 
+									{
+										var obj;
+										try
+										{
+  									    obj = JSON.parse (this.responseText);
+										//alert ("Response "+JSON.stringify(obj));
+										if (obj != null)
+											func (obj);
+										}
+										catch (err) {}
+									}	
+								};
+    
+    xhttp.open("POST", url, false);
+    xhttp.setRequestHeader("Content-type", "application/json");
+	//alert ("Request "+url+JSON.stringify(inputJson));
+	xhttp.send(inputJson);
+} 
+
+function createMyWebSocket()
+{
+	websocket = new WebSocket("ws://snakegame.com:9000/ws", );
+    websocket.onopen = function(evt) { onOpen(evt) };
+    websocket.onclose = function(evt) { onClose(evt) };
+    websocket.onmessage = function(evt) { onMessage(evt) };
+    websocket.onerror = function(evt) { onError(evt) };
+}
+
+function onOpen(evt) {
+                  //alert ("Connected to server");
+				  joinGame ("GauthamVatFirst");
+               }
+					
+function onClose(evt) {
+    alert ("DisConnected from server");
+	mySnakeNo = -1;
+	running = false;
+	joined = false;
+	snakes = [];
+}
+	
+function onMessage(evt) {
+	
+  var message = evt.data;
+  receiveMessage (evt.data);	
+  
+}
+	
+function onError(evt) {
+    alert (evt.data);
+}
+	
+function addMessage(message) {
+  
+   websocket.send(message);
+}
+
+
+
+function dummy(obj)
+{
+}
+
+
+function setSnake() 
+{
+	var api =	 {	name: "setSnake"};
+	var userno = { no: mySnakeNo };
+	
+	var request =
+	{
+	  no:userno,
+	  api:api,
+	  sn:snakes[mySnakeNo]
+	};
+	inputJson = JSON.stringify(request);
+	addMessage (inputJson);
+}
+
+function setApplePosition_p2(obj)
+{
+	apple.x=obj.event.apple.x;
+	apple.y=obj.event.apple.y;
+}
+
+
+function setApplePosition(min, max) 
+{
+	var api =	 { name: "setApplePosition"};
+	var userno = { no: mySnakeNo };
+	var range =  { min:min, max:max };
+	
+	var request =
+	{
+	  no:userno,
+	  api:api,
+	  range:range
+	};
+	inputJson = JSON.stringify(request);
+	addMessage (inputJson);
+}
+
+// game loop
+function animate() 
+{
+		if (running)
+			requestAnimationFrame(animate); // animate will be called for 60 times in a second
+		else
+			gameover_p2();
+		
+  // slow game loop to 15 fps instead of 60 (60/15 = 4)
+		if (++count < 4) // Maximum retries.
+			return;
+		 
+		count = 0;
+  
+        draw ();
+ 
+}
+
+function draw ()
+{
+  if (!joined)
+		return;
+
+  if (!running)
+		return;
+  
+  if ( snakes.length == 0 )
+		return;
+		
+  if (mySnakeNo == -1)
+		return;
+  
+  context.clearRect(0,0,canvas.width,canvas.height);
+  
+  for ( var i = 0; i < snakes.length; i++)
+  {
+	 if (!running ) //Inside the loop the snake would have bitten itself and would have to stop running.
+		break;
+		
+	  if (	snakes[i] == null )
+		continue;
+		  
+	  // COMMENTED context.clearRect(0,0,canvas.width,canvas.height);
+	  // move snakes[mySnakeNo] by it's velocity
+	  snakes[i].x += snakes[i].dx;
+	  snakes[i].y += snakes[i].dy;
+	  // wrap snakes[mySnakeNo] position horizontally on edge of screen
+	  
+	  //QUICKER UPDATE FOR OTHERS
+	  //setSnake ();
+
+	  if (snakes[i].x < 0) 
+	  {
+		snakes[i].x = canvas.width - grid;
+	  }
+	  else if (snakes[i].x >= canvas.width) 
+	  {
+		snakes[i].x = 0;
+	  }
+	  	   
+	  //QUICKER UPDATE FOR OTHERS
+	  //setSnake ();
+	  
+	  // wrap snakes[mySnakeNo] position vertically on edge of screen
+	  if (snakes[i].y < 0) {
+		snakes[i].y = canvas.height - grid;
+	  }
+	  else if (snakes[i].y >= canvas.height) {
+		snakes[i].y = 0;
+	  }
+	
+	  // keep track of where snakes[mySnakeNo] has been. front of the array is always the head
+	  snakes[i].cells.unshift( {x: snakes[i].x, y: snakes[i].y} );
+	  
+	  //QUICKER UPDATE FOR OTHERS
+	  //setSnake ();
+
+	  // remove cells as we move away from them
+	  if (snakes[i].cells.length > snakes[i].maxCells) 
+	  {
+		snakes[i].cells.pop();
+	  }
+	  	//QUICKER UPDATE FOR OTHERS
+        //setSnake ();
+	  
+ 	  // draw apple
+	  context.fillStyle = 'red';
+	  context.fillRect(apple.x, apple.y, grid-1, grid-1);
+	  // draw snakes[mySnakeNo] one cell at a time
+	  context.fillStyle = rgbcode[i%snakes.length];
+	  
+	  snakes[i].cells.forEach( function(cell, index) {
+		
+		// drawing 1 px smaller than the grid creates a grid effect in the snakes[mySnakeNo] body so you can see how long it is
+		context.fillRect(cell.x, cell.y, grid-1, grid-1);  
+		// snakes[mySnakeNo] ate apple
+		if (i == mySnakeNo)
+		{
+			if (cell.x == apple.x && cell.y == apple.y) 
+			{
+				  snakes[i].maxCells++; 
+  				  score+=10;
+				  setApplePosition ();
+			}
+		  }
+		// To display score
+		document.getElementById("score").innerHTML = "Score:" + score;
+
+		// check collision with all cells after this one (modified bubble sort)
+		if ( i == mySnakeNo)
+		{
+			for (var j = index+1; j < snakes[i].cells.length; j++) 
+			{ 
+			  // snakes[mySnakeNo] occupies same space as a body part. reset game	  
+			  if (cell.x == snakes[i].cells[j].x && cell.y == snakes[i].cells[j].y) 
+			  {
+					running = false;
+					snakes[mySnakeNo] = SNAKE;
+					exitGame ("GauthamV");	
+					break;
+				}	
+			 }
+		}
+	  });
+	  if (running)
+		setSnake ();	
+	}
+	
+}
+
+// game over fn
+
+function gameover_p2()
+{
+	context = canvas.getContext('2d');
+	context.font = "30px Arial";
+	context.fillStyle = "white";
+	context.textAlign = "center";
+	context.fillText("Gameover!", canvas.width / 2, 30);
+	context.fillText("Press enter to play again", canvas.width / 2, 60);
+	context.fillText("Score="+score, canvas.width / 2, 90);
+}
+
+
+
+function processEvents_p2(obj)
+{
+		if (obj.event)
+		{	
+			if (obj.event.no != -1)
+			{
+				/*if (obj.event.sn.reset == true)
+				{
+					snakes[obj.event.no] = SNAKE;
+
+					score=0;
+					running=true;
+					requestAnimationFrame(animate);
+				}
+				else*/
+				{
+					snakes[obj.event.no].dx = obj.event.sn.dx;
+					snakes[obj.event.no].dy = obj.event.sn.dy;
+				}
+			}
+		}
+}
+
+function processEvents (e)
+{
+	var api =	{	name: "processEvents"	};
+	var event = {	code:e.code	};
+	var userno = { no: mySnakeNo };
+	
+	var request =
+	{
+	  no:userno,
+	  api:api,
+	  key:event,
+	  sn:snakes[mySnakeNo]
+	};
+	inputJson = JSON.stringify(request);
+	addMessage (inputJson);
+}
+
+function joinGame_p2 (obj)
+{
+	if (obj.event.name == "addSnake")
+	{
+		snakes[obj.event.no]=SNAKE;
+		mySnakeNo = obj.event.no;	
+		//alert ("joinGame_p2 Snake No: "+ obj.event.no + JSON.stringify (snakes[obj.event.no]));
+		joined=true;
+		running = true;
+		score=0;
+		animate ();
+		if (!listenerAdded)
+		{
+			document.addEventListener('keydown', processEvents,true );
+			listenerAdded = true;
+		}
+	}
+}
+
+function joinGame (gamer)
+{
+	var api =	{	name: "joinGame" };
+	user.name = gamer;
+	
+	var request =
+	{
+	  api:api,
+	  userid:user
+	};
+	inputJson = JSON.stringify(request);
+	addMessage (inputJson);
+}
+
+function exitGame_p2 (obj)
+{
+	if (obj.event.name == "removeSnake")
+	{
+		snakes[obj.event.no]=null;
+		mySnakeNo = -1;	
+		joined=false;
+	}
+}
+
+function exitGame (gamer)
+{
+	var api =	{	name: "exitGame" };
+	user.name = gamer;
+	var userno = { no: mySnakeNo };
+	
+	var request =
+	{
+	  no:userno,
+	  api:api,
+	  userid:user
+	};
+	inputJson = JSON.stringify(request);
+	addMessage (inputJson);
+}
+
+function eventHandler (obj)
+{
+	if (obj.event.name == "addSnake")
+	{
+		snakes[obj.event.no] = SNAKE;
+		TotalPlayers ++;
+	}
+	else if (obj.event.name == "removeSnake")
+	{
+		snakes[obj.event.no]=null;
+		TotalPlayers--;
+	}
+	else if (obj.event.name == "appleMoved")
+	{
+		setApplePosition_p2 (obj);
+	}
+	else if (obj.event.name == "availableSnakes")
+	{
+		snakes[obj.event.no]=obj.event.sn;
+	}
+	else if (obj.event.name == "snakeNewPositioned")
+	{
+		snakes[obj.event.no]=obj.event.sn;
+	}
+	else if (obj.event.name == "keyPressed")
+	{
+			/*if (obj.event.sn.reset == true)
+			{
+				snakes[obj.event.no] = SNAKE;
+				
+				score=0;
+				running=true;
+				requestAnimationFrame(animate);
+			}
+			else*/
+			{
+				snakes[obj.event.no].dx = obj.event.sn.dx;
+				snakes[obj.event.no].dy = obj.event.sn.dy; 
+			}
+	}
+	else if (obj.event.name == "retry")
+	{
+		joinGame ("GauthamVfromrety");
+	}
+}
+
+
+
+function receiveMessage(message) {
+
+  try
+  {
+	if (message.length)
+	{
+		var obj = JSON.parse (message);
+		if (obj.api.name == "processEvents")
+			processEvents_p2(obj);
+		else if (obj.api.name == "joinGame")
+			joinGame_p2(obj);
+		else if (obj.api.name == "event")
+			eventHandler (obj);
+		else if (obj.api.name == "setApplePosition")
+			setApplePosition_p2 (obj);
+		else if (obj.api.name == "setSnake")
+			dummy (obj);
+		else if (obj.api.name == "exitGame")
+			exitGame_p2 (obj);
+	}
+  }
+  catch (err)
+  {
+	alert (message + err);
+  }
+}
+
+
+function onBrowserTabExit ()
+{
+	if (joined == true)
+	{
+		running = false;
+		exitGame ("GauthamV");
+		sleep(500);
+	}	
+}
+
+window.addEventListener('beforeunload', onBrowserTabExit,true );
+//window.onbeforeunload = onBrowserTabExit ();
+
+// listen to keyboard events to move the snakes[mySnakeNo]
+createMyWebSocket();
+
+// start the game
+
+running = true;
+
+</script>
+</body>
+</html>
+
+
