@@ -1,0 +1,44 @@
+body {
+    width: 100%;
+	height: 100%;
+	padding: 0;
+	border: none;
+    margin: 0;
+	background-image: url(file:///C:/Users/vijayarajp/assignments/assignment-1-mug/public/BG.jpg);
+  }  
+
+#title {
+	 color: Red;
+	 font-size:300%;
+	text-align: center;
+}
+
+ #score
+  {
+	  float: left;
+	  width: 20%;
+	  height: 80%;
+	  color: white;
+	  font-size:150%;
+	  align-items: left;
+	  justify-content: left;
+  }
+  
+   #users
+  {
+	  float: left;
+	  color: white;
+	  font-size:200%;
+	  align-items: left;
+	  justify-content: left;
+  }
+  
+   
+  #board
+  {
+	  float: left;
+	  align-items: centre;
+	  justify-content: centre;
+	  border: 3px solid white;
+	  color: white;
+  }

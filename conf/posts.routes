@@ -1,4 +1,3 @@
-
 GET    /                     v1.post.PostController.list(request:Request)
 POST   /                     v1.post.PostController.create(request:Request)
 

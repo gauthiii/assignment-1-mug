@@ -1,4 +1,4 @@
-name := """play-java-rest-api-example"""
+name := """assignment-1-mug"""
 
 version := "2.7.x"
 

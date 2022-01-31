@@ -1,6 +1,6 @@
 // @GENERATOR:play-routes-compiler
-// @SOURCE:C:/Users/vijayarajp/assignments/assignment-1-mug/conf/routes
-// @DATE:Sat Apr 06 10:03:58 IST 2019
+// @SOURCE:D:/Users/yamin/Documents/Game/assignment-1-mug/conf/routes
+// @DATE:Tue Apr 13 23:18:27 IST 2021
 
 package router
 
@@ -16,7 +16,7 @@ class Routes(
   override val errorHandler: play.api.http.HttpErrorHandler, 
   // @LINE:1
   HomeController_1: controllers.HomeController,
-  // @LINE:7
+  // @LINE:9
   Assets_0: controllers.Assets,
   val prefix: String
 ) extends GeneratedRouter {
@@ -25,7 +25,7 @@ class Routes(
    def this(errorHandler: play.api.http.HttpErrorHandler,
     // @LINE:1
     HomeController_1: controllers.HomeController,
-    // @LINE:7
+    // @LINE:9
     Assets_0: controllers.Assets
   ) = this(errorHandler, HomeController_1, Assets_0, "/")
 
@@ -41,7 +41,9 @@ class Routes(
 
   def documentation = List(
     ("""GET""", this.prefix, """controllers.HomeController.index"""),
+    ("""GET""", this.prefix + (if(this.prefix.endsWith("/")) "" else "/") + """join""", """controllers.HomeController.open"""),
     ("""GET""", this.prefix + (if(this.prefix.endsWith("/")) "" else "/") + """ws""", """controllers.HomeController.ws"""),
+    ("""POST""", this.prefix + (if(this.prefix.endsWith("/")) "" else "/") + """setSessionID""", """controllers.HomeController.setSessionID"""),
     ("""GET""", this.prefix + (if(this.prefix.endsWith("/")) "" else "/") + """assets/""" + "$" + """file<.+>""", """controllers.Assets.versioned(path:String = "/public", file:Asset)"""),
     Nil
   ).foldLeft(List.empty[(String,String,String)]) { (s,e) => e.asInstanceOf[Any] match {
@@ -69,10 +71,28 @@ class Routes(
   )
 
   // @LINE:3
-  private[this] lazy val controllers_HomeController_ws1_route = Route("GET",
+  private[this] lazy val controllers_HomeController_open1_route = Route("GET",
+    PathPattern(List(StaticPart(this.prefix), StaticPart(this.defaultPrefix), StaticPart("join")))
+  )
+  private[this] lazy val controllers_HomeController_open1_invoker = createInvoker(
+    HomeController_1.open,
+    play.api.routing.HandlerDef(this.getClass.getClassLoader,
+      "router",
+      "controllers.HomeController",
+      "open",
+      Nil,
+      "GET",
+      this.prefix + """join""",
+      """""",
+      Seq()
+    )
+  )
+
+  // @LINE:5
+  private[this] lazy val controllers_HomeController_ws2_route = Route("GET",
     PathPattern(List(StaticPart(this.prefix), StaticPart(this.defaultPrefix), StaticPart("ws")))
   )
-  private[this] lazy val controllers_HomeController_ws1_invoker = createInvoker(
+  private[this] lazy val controllers_HomeController_ws2_invoker = createInvoker(
     HomeController_1.ws,
     play.api.routing.HandlerDef(this.getClass.getClassLoader,
       "router",
@@ -87,10 +107,28 @@ class Routes(
   )
 
   // @LINE:7
-  private[this] lazy val controllers_Assets_versioned2_route = Route("GET",
+  private[this] lazy val controllers_HomeController_setSessionID3_route = Route("POST",
+    PathPattern(List(StaticPart(this.prefix), StaticPart(this.defaultPrefix), StaticPart("setSessionID")))
+  )
+  private[this] lazy val controllers_HomeController_setSessionID3_invoker = createInvoker(
+    HomeController_1.setSessionID,
+    play.api.routing.HandlerDef(this.getClass.getClassLoader,
+      "router",
+      "controllers.HomeController",
+      "setSessionID",
+      Nil,
+      "POST",
+      this.prefix + """setSessionID""",
+      """""",
+      Seq()
+    )
+  )
+
+  // @LINE:9
+  private[this] lazy val controllers_Assets_versioned4_route = Route("GET",
     PathPattern(List(StaticPart(this.prefix), StaticPart(this.defaultPrefix), StaticPart("assets/"), DynamicPart("file", """.+""",false)))
   )
-  private[this] lazy val controllers_Assets_versioned2_invoker = createInvoker(
+  private[this] lazy val controllers_Assets_versioned4_invoker = createInvoker(
     Assets_0.versioned(fakeValue[String], fakeValue[Asset]),
     play.api.routing.HandlerDef(this.getClass.getClassLoader,
       "router",
@@ -114,15 +152,27 @@ class Routes(
       }
   
     // @LINE:3
-    case controllers_HomeController_ws1_route(params@_) =>
+    case controllers_HomeController_open1_route(params@_) =>
       call { 
-        controllers_HomeController_ws1_invoker.call(HomeController_1.ws)
+        controllers_HomeController_open1_invoker.call(HomeController_1.open)
+      }
+  
+    // @LINE:5
+    case controllers_HomeController_ws2_route(params@_) =>
+      call { 
+        controllers_HomeController_ws2_invoker.call(HomeController_1.ws)
       }
   
     // @LINE:7
-    case controllers_Assets_versioned2_route(params@_) =>
+    case controllers_HomeController_setSessionID3_route(params@_) =>
+      call { 
+        controllers_HomeController_setSessionID3_invoker.call(HomeController_1.setSessionID)
+      }
+  
+    // @LINE:9
+    case controllers_Assets_versioned4_route(params@_) =>
       call(Param[String]("path", Right("/public")), params.fromPath[Asset]("file", None)) { (path, file) =>
-        controllers_Assets_versioned2_invoker.call(Assets_0.versioned(path, file))
+        controllers_Assets_versioned4_invoker.call(Assets_0.versioned(path, file))
       }
   }
 }

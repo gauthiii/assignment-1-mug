@@ -1,7 +1,9 @@
 package controllers;
 
 import java.util.*;
+import java.lang.*;
 import javax.inject.Inject;
+import java.util.UUID;
 
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.*;
@@ -10,6 +12,7 @@ import play.libs.Json;
 import play.api.Logger.*;
 import play.*;
 import play.libs.streams.ActorFlow;
+import com.typesafe.config.Config;
 
 import akka.actor.*;
 import akka.stream.*;
@@ -55,9 +58,12 @@ class Snake
 {
 	
 	int x,y,dx,dy,grid,maxCells;
+	int score;
 	CoOrd cells [];
 	Logger.ALogger logger;
 	boolean reset = false;
+	String name;
+	int postn;
   
   // dx, dy snake velocity. moves one grid length every frame in either the x or y direction
  
@@ -74,7 +80,9 @@ class Snake
 		  dx = 16;
 		  dy = 0;
 		  maxCells = 4;
+		  score = 0;
 		  cells  = new CoOrd [4];
+		  name = new String ("new_user");
 	  }  
 		public ObjectNode toObjectNode() 
 		{ 
@@ -97,12 +105,23 @@ class Snake
 			result.put("dy" , dy);
 			result.put("cells" , arrayNode);
 			result.put("maxCells" ,maxCells);
-			
+			result.put("score" ,score);
 			result.put("reset" , reset);
+			result.put("name" , name);
+			result.put("postn" , postn);
 			return result; 
 		} 
   }
 	
+class RandomStringUUID 
+{
+	public static String getGUID () 
+	{
+		UUID uuid = UUID.randomUUID();
+		String randomUUIDString = uuid.toString();
+		return randomUUIDString;
+	}
+}
 
 class  SnakeBoard
 {
@@ -111,14 +130,19 @@ class  SnakeBoard
 	ArrayList<String> usernames = new ArrayList<String> ();
 	ArrayList<Snake> snakes = new ArrayList<Snake> ();
 	ArrayList<MyWebSocketActor> endPoints = new ArrayList<MyWebSocketActor> ();
+	static ArrayList<String> SIDs = new ArrayList<String> ();
+
 	
 	Apple apple;
 	Range range;
 	int grid = 16;
-	int count = 0;
-	int score=0;
-	boolean running = false;
 	Logger.ALogger logger;
+	
+	
+	public int totalSnakes ()
+	{
+		return users;
+	}
 	
 	public SnakeBoard ()
 	{
@@ -138,10 +162,11 @@ class  SnakeBoard
 	
 	 public synchronized void  removeSnakeFor (int no)
 	{
-		if (users > 0)
+		if (no >= 0)
 		{
 			usernames.set (no,null);
 			snakes.set (no, null);
+			SnakeBoard.SIDs.set (no, null);
 			users--;
 		}
 	}
@@ -158,6 +183,8 @@ class MyWebSocketActor extends AbstractActor
     }
 	
 	public static ArrayList <MyWebSocketActor> clients = new ArrayList<MyWebSocketActor> ();
+	public static ArrayList <String> clientSIDs = new ArrayList<String> ();
+
 	
 	public Receive receiver;
 	
@@ -174,6 +201,22 @@ class MyWebSocketActor extends AbstractActor
 		}
 	}
 	
+	public static String findSessionID (MyWebSocketActor actor)
+	{
+		String sid = "dummysid";
+		for (int i =0; i < clients.size(); i++)
+		{
+			//HomeController.hc.logger.info( "As Event: to client " + Integer.toString (i)+ message);
+			MyWebSocketActor item = clients.get (i);
+			if (item.equals (actor) )
+			{
+				sid = clientSIDs.get (i);
+				break;
+			}	
+		}
+		return sid;
+	}
+	
 	public static void sendTo (int no, String message)
 	{
 		//HomeController.hc.logger.info( "As Event: to client " + Integer.toString (no)+ message);
@@ -184,24 +227,27 @@ class MyWebSocketActor extends AbstractActor
 	@Inject
     public MyWebSocketActor(ActorRef out) {
         this.out = out;
+		clients.add (this);
+		HomeController.hc.logger.info("ActorRef created");
     }
 
     @Override
     public Receive createReceive() 
 	{	
-		HomeController.hc.logger.info("WebSocket opened");
-		clients.add (this);
-		
 		receiver = receiveBuilder().match(String.class, message -> out.tell(HomeController.hc.processMessage (message), self())  ).build();
 	    //return receiveBuilder().match(String.class, message -> out.tell("Received Your messge "+ message, self())  ).build();
-		
+		HomeController.hc.logger.info("Reciever created");
 		return receiver;
     }
 	
-	public void postStop() throws Exception 
+	public synchronized void postStop() throws Exception 
 	{
+		String sid = findSessionID (this);
         clients.remove (this);
-	   	HomeController.hc.logger.info("WebSocket closed");
+		clientSIDs.remove (sid);
+		
+		HomeController.hc.removeRespectiveSnake (sid);
+		HomeController.hc.logger.info("Receiver closed for "+sid);
     }
 }
 
@@ -218,23 +264,71 @@ public class HomeController extends Controller
     private final Materializer materializer;
 	public static HomeController hc;
 	public static int connections=0;
+	private final Config config;
 
     @Inject
-    public HomeController(ActorSystem actorSystem, Materializer materializer) 
+    public HomeController(ActorSystem actorSystem, Materializer materializer, Config config) 
 	{
         this.actorSystem = actorSystem;
         this.materializer = materializer;
 		//this.materializer = ActorMaterializer.create(ActorMaterializerSettings.create(actorSystem).withInputBuffer(64, 64), actorSystem);
 		this.hc = this;
-    }
+		this.config = config;
+		//logger.info ( "server idle time out from play" + config.getString("play.akka.http.server.idle-timeout") );
+	}
+	
+	public static void removeRespectiveSnake (String sid)
+	{
+		for (int i =0; i < SnakeBoard.SIDs.size(); i++)
+		{
+			String item = SnakeBoard.SIDs.get (i);
+			if (item == null)
+				continue;
+			if (item.equals (sid) )
+			{
+				board.removeSnakeFor (i);
+				ObjectNode Eapi =  createApi ("event"); 
+				ObjectNode wrapper = Json.newObject(); 
+				
+				ObjectNode event = createEvent ( "removeSnake", new String [] {"no"}, new String [] {"int"}, new Object [] {i} );
+				wrapper.setAll (Eapi);;
+				wrapper.setAll (event);;
+				MyWebSocketActor.sendAll (wrapper.toString());
+				
+				HomeController.hc.logger.info("Remove snake with sid "+sid +" at "+ Integer.toString(i));
+				break;
+		    }		
+		}
+		
+	}
+	
 
-    public WebSocket ws() 
+   public WebSocket ws () 
 	{
         //return WebSocket.Json.accept(request -> ActorFlow.actorRef( MyWebSocketActor::props,actorSystem, materializer));
-			
-		return WebSocket.Text.accept(request -> ActorFlow.actorRef( (out) -> MyWebSocketActor.props(out), 1024,  OverflowStrategy.fail(), actorSystem, materializer));
-    }
+		
+		java.util.function.Function<akka.actor.ActorRef,akka.actor.Props>  out = MyWebSocketActor::props;
+		
+		WebSocket wsoc = WebSocket.Text.accept(request -> ActorFlow.actorRef( out, 1024,  OverflowStrategy.fail(), actorSystem, materializer));
+		 
+		//WebSocket wsoc = WebSocket.Text.accept(request -> ActorFlow.actorRef( (out) -> MyWebSocketActor.props(out), 1024,  OverflowStrategy.fail(), actorSystem, materializer));
+		
+		Http.Cookies itr = request ().cookies ();
+		
+		String SID = itr.get ("SNGSESSIONID").value();
+		
+		if ( MyWebSocketActor.clientSIDs.contains (SID) )
+		{
+			logger.debug ("Session ID :"+ itr.get ("SNGSESSIONID").value() + "already exists ..duplicates not allowed");
+			return null;
+		}	
+		MyWebSocketActor.clientSIDs.add (SID);
+		
+		logger.debug ("Session ID :"+ itr.get ("SNGSESSIONID").value());
+		
+		return wsoc;
 	
+	}
 	
 	public String processMessage (String message)
 	{
@@ -273,63 +367,34 @@ public class HomeController extends Controller
 		return (response);
 	}
 
+	public Result open()
+	{ return ok(views.html.open.render());
+	}
 	
-    public Result index() {
-        return ok(views.html.index.render());
+    public Result index() 
+	{
+		String guid = RandomStringUUID.getGUID();
+		logger.info ("API : index :" + guid);
+        return ok(views.html.index.render()).withCookies( Http.Cookie.builder("SNGSESSIONID", guid ).build() );
     }
 	
-	 public Result arrowLeft() {
-        return ok("Left Arrow Pressed");
+	 public synchronized Result setSessionID() 
+	 {
+		logger.info ("API : setSessionID");
+		JsonNode request = request().body().asJson();
+		
+		int userno =  request.findValue("no").asInt();
+		
+		Http.Cookies itr = request ().cookies ();
+		String sid = itr.get ("SNGSESSIONID").value();
+		
+		SnakeBoard.SIDs.add (userno, sid);
+		
+		logger.debug ("Session ID :"+ sid +" No:" + Integer.toString(userno));
+	
+        return ok("Set Session ID invoked successfully");
 	 }
 		
-	 public Result gameover() 
-	 {
-		logger.info ("API : gameover");
-		  JsonNode jsonNode = request().body().asJson();
-		  
-		  
-		  //ObjectNode result = Json.newObject();
-		  //result.put ("font" ,"30px Arial");
-		  	  
-			if (jsonNode != null)
-			{
-				((ObjectNode)jsonNode).put("font" ,"30px Arial");
-				((ObjectNode)jsonNode).put("fillStyle" , "white");
-				((ObjectNode)jsonNode).put("textAlign" , "center");
-				return ok ( jsonNode);
-			}
-			else
-				return badRequest("Expecting Json data");		
-		 	
-     }
-	 
-	 public Result retry() 
-	 {
-		  logger.info ("API : retry");
-		  ObjectNode result = Json.newObject();
-		  
-				  	  
-			if (result != null)
-			{
-				result.put("x" ,160);
-				result.put("y" , 160);
-				
-				ArrayNode arrayNode = new ObjectMapper().createArrayNode();
-				//arrayNode.add(arrayNodeObject1);
-				//arrayNode.add(arrayNodeObject2);
-				//arrayNode.add(arrayNodeObject3);
-				result.put("cells" , arrayNode);
-				result.put("maxCells" ,4);
-				result.put("dx" , 16);
-				result.put("dy" , 0);
-				
-				return ok ( result);
-			}
-			else
-				return badRequest("Expecting Json data");		
-		 	
-     }
-	 
 	   
 	 public Result setApplePosition ()
 	 {
@@ -470,8 +535,9 @@ public class HomeController extends Controller
 		 ObjectNode Aapi = createApi ("processEvents"); 
 		 ObjectNode Eapi = createApi ("event"); 
 		 ObjectNode wrapper = Json.newObject();
-		 
+		 boolean gameStarted = false;
 	     String response;
+		 Snake sn = new Snake();
 		 
 		 //logger.info ("API : processEvents ");
 		 		 
@@ -484,9 +550,46 @@ public class HomeController extends Controller
 		 
 		 KeyPressed e = new KeyPressed( kp );
 		  
-		  if ( no == -1) // Snake had bitten itself and new game initiated.
+		  if ( no != -1) // The user is already in the game.....
 		  {
-			if(e.code.equals ("Enter") )
+			  gameStarted = true;
+			  sn = board.snakes.get(no);
+			  
+			  if (sn == null)
+			  {
+					logger.error ("API : processEvents: null snake at server for #" + Integer.toString(no) );
+					board.snakes.set( no,new Snake() );
+			  }
+			 
+			  sn.x= snake.findValue("x").asInt();;
+			  sn.y = snake.findValue("y").asInt();;
+			  sn.dx = snake.findValue("dx").asInt();;
+			  sn.dy = snake.findValue("dy").asInt();;
+			  sn.maxCells =snake.findValue("maxCells").asInt();
+			  sn.score =snake.findValue("score").asInt();
+			  sn.reset =snake.findValue("reset").asBoolean();
+			  sn.name = snake.findValue("name").asText();
+			  sn.postn = snake.findValue("postn").asInt();;
+			  
+			 JsonNode cellArray = snake.findValue("cells");
+			 if  (cellArray.isArray ())
+			 {
+				 sn.cells  = new CoOrd [cellArray.size()];
+				 Iterator<JsonNode> it = cellArray.iterator();
+				 int i = 0;
+				 while (it.hasNext()) 
+				 {
+					 JsonNode n = it.next();
+					 int x = n.findValue("x"). asInt();
+					 int y = n.findValue("y"). asInt();
+					 sn.cells [i++] = new CoOrd (x,y);
+				 }	 
+			 }  		
+		 }
+		 
+		 if ( e.code.equals ("Enter") ) 
+		 {
+			if(no == -1) // Snake had bitten itself and new game initiated.
 			{
 			    logger.info ("API : processEvents "+e.code);
 				logger.info ("retry chosen");
@@ -504,55 +607,29 @@ public class HomeController extends Controller
 			{
 				return (Aapi.toString());	  
 			}
-		  }
-		  
-		  Snake sn = board.snakes.get(no);
-		 
-		  sn.x= snake.findValue("x").asInt();;
-		  sn.y = snake.findValue("y").asInt();;
-		  sn.dx = snake.findValue("dx").asInt();;
-		  sn.dy = snake.findValue("dy").asInt();;
-		  sn.maxCells =snake.findValue("maxCells").asInt();
-		  
-		 JsonNode cellArray = snake.findValue("cells");
-		 if  (cellArray.isArray ())
-		 {
-			 sn.cells  = new CoOrd [cellArray.size()];
-			 Iterator<JsonNode> it = cellArray.iterator();
-			 int i = 0;
-             while (it.hasNext()) 
-			 {
-				 JsonNode n = it.next();
-				 int x = n.findValue("x"). asInt();
-				 int y = n.findValue("y"). asInt();
-				 sn.cells [i++] = new CoOrd (x,y);
-			 }	 
-         }
-		  		
-
- 		 // Left Arrow
-		 if (e.code .equals  ("ArrowLeft") && sn.dx == 0) 
+		 }
+		 else if (e.code .equals  ("ArrowLeft") && sn.dx == 0 && gameStarted)  // Left Arrow
 		 { 
 			logger.info ("API : processEvents "+e.code);
 			sn.dy = 0;
 			sn.dx = -board.grid;
 		 }
 		  // up arrow key
-		  else if (e.code .equals  ("ArrowUp") && sn.dy == 0) 
+		  else if (e.code .equals  ("ArrowUp") && sn.dy == 0 && gameStarted) 
 		  {
 		    logger.info ("API : processEvents "+e.code);
 			sn.dy = -board.grid;
 			sn.dx = 0;
 		  }
 		  // right arrow key
-		  else if (e.code .equals  ("ArrowRight") && sn.dx == 0) 
+		  else if (e.code .equals  ("ArrowRight") && sn.dx == 0 && gameStarted) 
 		  {
 			  logger.info ("API : processEvents "+e.code);
 			sn.dy = 0;
 			sn.dx = board.grid; 
 		  }
 		  // down arrow key
-		  else if (e.code .equals ("ArrowDown") && sn.dy == 0) 
+		  else if (e.code .equals ("ArrowDown") && sn.dy == 0 && gameStarted) 
 		  {
 			logger.info ("API : processEvents "+e.code);
 			sn.dy = board.grid;
@@ -562,6 +639,7 @@ public class HomeController extends Controller
 		  {
 			  return (Aapi.toString());	  
 		  }
+		  
 		  board.snakes.set(no,sn);
 		  
 		  ObjectNode event = createEvent ( "keyPressed", 
@@ -598,14 +676,20 @@ public class HomeController extends Controller
 		  Snake sn = board.snakes.get(no);
 		  
 		  if (sn == null)
-				logger.error ("API : setSnake " +"null snake" );
+		  {
+				logger.error ("API : setSnake: null snake at server for #" + Integer.toString(no) );
+				board.snakes.set( no,new Snake() );
+		  }
 		
 		  sn.x= snake.findValue("x").asInt();;
 		  sn.y = snake.findValue("y").asInt();;
 		  sn.dx = snake.findValue("dx").asInt();;
 		  sn.dy = snake.findValue("dy").asInt();;
+		  sn.score = snake.findValue("score").asInt();;
+		  sn.name = snake.findValue("name").asText();;
 		  sn.maxCells =snake.findValue("maxCells").asInt();
 		  sn.reset =snake.findValue("reset").asBoolean();
+		  sn.postn = snake.findValue("postn").asInt();;
 		  
 	     JsonNode cellArray = snake.findValue("cells");
 		 if  (cellArray.isArray ())
@@ -655,8 +739,10 @@ public class HomeController extends Controller
 		 String user =  request.findValue("userid").asText();
 		 
 		 int no = board.addSnakeFor(user);
+		 board.snakes.get(no).name = user;
+		 board.snakes.get(no).postn = no;
 		 
-		for ( int i = 0; i < board.snakes.size(); i++)  //send existing Snakes To All User.
+		 for ( int i = 0; i < board.snakes.size(); i++)  //send existing Snakes To All User.
 		 {			 
 				 Snake sn = board.snakes.get(i);
 				 
@@ -685,7 +771,7 @@ public class HomeController extends Controller
 		 wrapper.setAll (Aapi);;
 		 wrapper.setAll (event);;
 		 		
-		logger.debug ("API : joinGame " + wrapper.toString() );
+		logger.debug ("API : joinGame " + wrapper.toString() + " Total Snakes :"+  Integer.toString (board.totalSnakes())  );
 
 		 return (wrapper.toString());
 		 
@@ -719,7 +805,7 @@ public class HomeController extends Controller
 		 return (wrapper.toString());
 	 } 
 	 
-	 public ObjectNode createEvent ( String eventname, String [] fieldNames, String [] dataTypes, Object [] values)
+	 public static ObjectNode createEvent ( String eventname, String [] fieldNames, String [] dataTypes, Object [] values)
 	 {
 		 ObjectNode result = Json.newObject();
 		 result.with ("event").put ( "name", eventname );
@@ -735,14 +821,14 @@ public class HomeController extends Controller
 		 return result;
 	 }
 	 
-	 public ObjectNode createApi ( String name )
+	 public static ObjectNode createApi ( String name )
 	 {
 		 ObjectNode result = Json.newObject(); 
 		 result.with ("api").put ( "name", name );
 		 return result;
 	 }
 	 
-	  public ObjectNode createNamedJson ( String name, String json )
+	  public static ObjectNode createNamedJson ( String name, String json )
 	 {
 		 ObjectNode wrapper = Json.newObject();
 		 

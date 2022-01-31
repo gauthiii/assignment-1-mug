@@ -1,9 +1,9 @@
 [0m[[0m[0mdebug[0m] [0m[0mCopy resource mappings: [0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\akka.conf,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\akka.conf)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\application.conf,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\application.conf)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\logback.xml,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\logback.xml)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\META-INF,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\META-INF)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\META-INF\persistence.xml,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\META-INF\persistence.xml)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\posts.routes,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\posts.routes)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\reference.conf,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\reference.conf)[0m
-[0m[[0m[0mdebug[0m] [0m[0m	(C:\Users\vijayarajp\assignments\assignment-1-mug\conf\routes,C:\Users\vijayarajp\assignments\assignment-1-mug\target\scala-2.12\classes\routes)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\akka.conf,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\akka.conf)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\application.conf,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\application.conf)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\logback.xml,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\logback.xml)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\META-INF,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\META-INF)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\META-INF\persistence.xml,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\META-INF\persistence.xml)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\posts.routes,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\posts.routes)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\reference.conf,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\reference.conf)[0m
+[0m[[0m[0mdebug[0m] [0m[0m	(D:\Users\yamin\Documents\Game\assignment-1-mug\conf\routes,D:\Users\yamin\Documents\Game\assignment-1-mug\target\scala-2.12\classes\routes)[0m

@@ -1,6 +1,6 @@
 // @GENERATOR:play-routes-compiler
-// @SOURCE:C:/Users/vijayarajp/assignments/assignment-1-mug/conf/posts.routes
-// @DATE:Sat Apr 06 09:58:12 IST 2019
+// @SOURCE:D:/Users/yamin/Documents/Game/assignment-1-mug/conf/posts.routes
+// @DATE:Tue Apr 13 23:18:27 IST 2021
 
 package posts
 
@@ -14,14 +14,14 @@ import _root_.play.libs.F
 
 class Routes(
   override val errorHandler: play.api.http.HttpErrorHandler, 
-  // @LINE:2
+  // @LINE:1
   PostController_0: v1.post.PostController,
   val prefix: String
 ) extends GeneratedRouter {
 
    @javax.inject.Inject()
    def this(errorHandler: play.api.http.HttpErrorHandler,
-    // @LINE:2
+    // @LINE:1
     PostController_0: v1.post.PostController
   ) = this(errorHandler, PostController_0, "/")
 
@@ -47,7 +47,7 @@ class Routes(
   }}
 
 
-  // @LINE:2
+  // @LINE:1
   private[this] lazy val v1_post_PostController_list0_route = Route("GET",
     PathPattern(List(StaticPart(this.prefix)))
   )
@@ -67,7 +67,7 @@ class Routes(
     )
   )
 
-  // @LINE:3
+  // @LINE:2
   private[this] lazy val v1_post_PostController_create1_route = Route("POST",
     PathPattern(List(StaticPart(this.prefix)))
   )
@@ -87,7 +87,7 @@ class Routes(
     )
   )
 
-  // @LINE:5
+  // @LINE:4
   private[this] lazy val v1_post_PostController_show2_route = Route("GET",
     PathPattern(List(StaticPart(this.prefix), StaticPart(this.defaultPrefix), DynamicPart("id", """[^/]+""",true)))
   )
@@ -107,7 +107,7 @@ class Routes(
     )
   )
 
-  // @LINE:6
+  // @LINE:5
   private[this] lazy val v1_post_PostController_update3_route = Route("PUT",
     PathPattern(List(StaticPart(this.prefix), StaticPart(this.defaultPrefix), DynamicPart("id", """[^/]+""",true)))
   )
@@ -130,28 +130,28 @@ class Routes(
 
   def routes: PartialFunction[RequestHeader, Handler] = {
   
-    // @LINE:2
+    // @LINE:1
     case v1_post_PostController_list0_route(params@_) =>
       call { 
         v1_post_PostController_list0_invoker.call(
           req => PostController_0.list(req))
       }
   
-    // @LINE:3
+    // @LINE:2
     case v1_post_PostController_create1_route(params@_) =>
       call { 
         v1_post_PostController_create1_invoker.call(
           req => PostController_0.create(req))
       }
   
-    // @LINE:5
+    // @LINE:4
     case v1_post_PostController_show2_route(params@_) =>
       call(params.fromPath[String]("id", None)) { (id) =>
         v1_post_PostController_show2_invoker.call(
           req => PostController_0.show(req, id))
       }
   
-    // @LINE:6
+    // @LINE:5
     case v1_post_PostController_update3_route(params@_) =>
       call(params.fromPath[String]("id", None)) { (id) =>
         v1_post_PostController_update3_invoker.call(

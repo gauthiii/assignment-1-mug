@@ -1,6 +1,6 @@
 // @GENERATOR:play-routes-compiler
-// @SOURCE:C:/Users/vijayarajp/assignments/assignment-1-mug/conf/routes
-// @DATE:Sat Apr 06 10:03:58 IST 2019
+// @SOURCE:D:/Users/yamin/Documents/Game/assignment-1-mug/conf/routes
+// @DATE:Tue Apr 13 23:18:27 IST 2021
 
 package controllers;
 

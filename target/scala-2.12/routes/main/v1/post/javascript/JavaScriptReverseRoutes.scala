@@ -1,6 +1,6 @@
 // @GENERATOR:play-routes-compiler
-// @SOURCE:C:/Users/vijayarajp/assignments/assignment-1-mug/conf/posts.routes
-// @DATE:Sat Apr 06 09:58:12 IST 2019
+// @SOURCE:D:/Users/yamin/Documents/Game/assignment-1-mug/conf/posts.routes
+// @DATE:Tue Apr 13 23:18:27 IST 2021
 
 import play.api.routing.JavaScriptReverseRoute
 
@@ -8,10 +8,10 @@ import play.api.routing.JavaScriptReverseRoute
 import _root_.controllers.Assets.Asset
 import _root_.play.libs.F
 
-// @LINE:2
+// @LINE:1
 package v1.post.javascript {
 
-  // @LINE:2
+  // @LINE:1
   class ReversePostController(_prefix: => String) {
 
     def _defaultPrefix: String = {
@@ -19,7 +19,7 @@ package v1.post.javascript {
     }
 
   
-    // @LINE:6
+    // @LINE:5
     def update: JavaScriptReverseRoute = JavaScriptReverseRoute(
       "v1.post.PostController.update",
       """
@@ -29,7 +29,7 @@ package v1.post.javascript {
       """
     )
   
-    // @LINE:2
+    // @LINE:1
     def list: JavaScriptReverseRoute = JavaScriptReverseRoute(
       "v1.post.PostController.list",
       """
@@ -39,7 +39,7 @@ package v1.post.javascript {
       """
     )
   
-    // @LINE:5
+    // @LINE:4
     def show: JavaScriptReverseRoute = JavaScriptReverseRoute(
       "v1.post.PostController.show",
       """
@@ -49,7 +49,7 @@ package v1.post.javascript {
       """
     )
   
-    // @LINE:3
+    // @LINE:2
     def create: JavaScriptReverseRoute = JavaScriptReverseRoute(
       "v1.post.PostController.create",
       """
